@@ -1,0 +1,66 @@
+
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: anketalar_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web:
+    build: .
+    command: sh /app/entrypoint.sh
+    # MUHIM: avval bu yerda qo'shimcha "media:/app/media" named volume HAM
+    # bor edi — aynan shu narsa "restart berganda rasmlar o'chib ketishi"
+    # xatosining sababi edi. Sabab: ".:/app" butun backend papkasini
+    # konteynerga ulaydi (shu jumladan haqiqiy "media/" papkasini ham), lekin
+    # pastda alohida "media:/app/media" volume e'lon qilingani uchun Docker
+    # uni xuddi shu yo'l ustiga MOS RAVISHDA QOPLAB qo'yardi — natijada
+    # konteyner ichidan /app/media papkasi endi diskdagi haqiqiy "media/"
+    # papkasi emas, balki Docker boshqaradigan ALOHIDA, bo'sh nomli volume
+    # bo'lib qolardi. Eski rasmlar diskda ("backend/media/...") tinch turardi,
+    # lekin ilova ularni ko'rolmasdi — xuddi "o'chib ketgan"day tuyulardi.
+    # Yechim: alohida volume'ni olib tashlab, faqat ".:/app" bind mount'iga
+    # tayanamiz — bu haqiqiy diskdagi papka, konteyner restart/qayta build
+    # qilinganda HECH QACHON yo'qolmaydi.
+    volumes:
+      - .:/app
+    ports:
+      - "8001:8000"
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery:
+    build: .
+    command: celery -A config worker -l info
+    volumes:
+      - .:/app
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  pgdata:

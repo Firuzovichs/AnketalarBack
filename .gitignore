@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.pyc
+
+# Virtual environment
+venv/
+env/
+.env/
+.venv/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Media & static (user uploads, collected static)
+media/
+staticfiles/
+
+# Apple certificates (private keys — hech qachon commitlanmasin)
+apple_certificates/
+*.p8
+*.pem
+*.cer
+*.der
+*.key
+
+# Docker
+.dockerignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Migrations (ixtiyoriy — ko'pincha commitlanadi, lekin local test migrationlar uchun)
+# */migrations/*.py
+# !*/migrations/__init__.py

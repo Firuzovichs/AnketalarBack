@@ -9,7 +9,7 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
 # Android emulator host (10.0.2.2 = Mac localhost from emulator)
 if '10.0.2.2' not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS += ['10.0.2.2', '10.0.2.15']
+    ALLOWED_HOSTS += ['10.0.2.2', '10.0.2.15','45.138.159.86']
 
 DJANGO_APPS = [
     'jazzmin',                          # Jazzmin birinchi bo'lishi shart

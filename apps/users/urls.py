@@ -8,6 +8,7 @@ from .views import (
     PasswordResetRequestView, PasswordResetConfirmView,
     BlockUserView, UnblockUserView,
     AccountDeletionRequestView,
+    UserDetailView,
 )
 
 urlpatterns = [
@@ -42,4 +43,7 @@ urlpatterns = [
 
     # Hisobni o'chirish so'rovi (admin tasdiqlasa is_active=False bo'ladi)
     path('account/delete-request/', AccountDeletionRequestView.as_view(), name='account-delete-request'),
+
+    # Boshqa foydalanuvchi profili
+    path('users/<int:pk>/', UserDetailView.as_view(), name='user-detail'),
 ]

@@ -251,6 +251,18 @@ class PasswordResetConfirmView(APIView):
         return Response({'detail': "Parol muvaffaqiyatli o'zgartirildi. Qayta kiring."})
 
 
+# ── Boshqa foydalanuvchi profili ─────────────────────────────────────
+
+class UserDetailView(generics.RetrieveAPIView):
+    """GET /auth/users/<pk>/ — boshqa foydalanuvchi profilini ko'rish."""
+    serializer_class   = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        from django.contrib.auth import get_user_model
+        return get_user_model().objects.filter(is_active=True)
+
+
 # ── Bloklash + adminga shikoyat ───────────────────────────────────────
 
 class BlockUserView(APIView):

@@ -99,9 +99,12 @@ class UserSerializer(serializers.ModelSerializer):
         return None
 
     def get_subscription_type(self, obj):
-        sub = getattr(obj, 'subscription', None)
-        if sub and sub.is_active:
-            return sub.plan.plan_type
+        try:
+            sub = getattr(obj, 'subscription', None)
+            if sub and sub.is_active and sub.plan:
+                return sub.plan.plan_type
+        except Exception:
+            pass
         return 'free'
 
 

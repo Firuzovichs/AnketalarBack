@@ -105,30 +105,31 @@ class ChatConsumer(AsyncWebsocketConsumer):
     # ── Group event handlers ──────────────────────────────────────
 
     async def chat_message(self, event):
+        # Android/iOS `type` maydonini tekshiradi — `event` emas.
+        # `message` nested ob'ektni to'liq yuboramiz (reply_to, sender bilan).
         await self.send(text_data=json.dumps({
-            'event': 'new_message',
-            **{k: v for k, v in event.items() if k != 'type'},
+            'type':    'chat_message',
+            'message': event.get('message', {}),
         }))
 
     async def typing_indicator(self, event):
         if event['user_id'] != self.user.id:
             await self.send(text_data=json.dumps({
-                'event':      'typing',
-                'user_id':    event['user_id'],
-                'is_typing':  event['is_typing'],
+                'type':     'typing',
+                'user_id':  event['user_id'],
             }))
 
     async def presence_status(self, event):
         if event['user_id'] != self.user.id:
             await self.send(text_data=json.dumps({
-                'event':     'presence',
+                'type':      'presence',
                 'user_id':   event['user_id'],
                 'is_online': event['is_online'],
             }))
 
     async def message_read(self, event):
         await self.send(text_data=json.dumps({
-            'event':      'message_read',
+            'type':       'message_read',
             'message_id': event['message_id'],
             'user_id':    event['user_id'],
         }))

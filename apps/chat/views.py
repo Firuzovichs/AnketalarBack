@@ -93,7 +93,10 @@ class MessageListView(generics.ListAPIView):
         for msg in unread:
             MessageRead.objects.get_or_create(message=msg, user=self.request.user)
 
-        qs = room.messages.filter(is_deleted=False).select_related('sender', 'reply_to')
+        qs = room.messages.filter(is_deleted=False).select_related(
+            'sender', 'sender__profile',
+            'reply_to', 'reply_to__sender', 'reply_to__sender__profile',
+        )
         # "Chatni tozalash" qilingan bo'lsa, shu vaqtdan OLDINGI xabarlar
         # FAQAT shu foydalanuvchiga ko'rsatilmaydi — bazadagi qatorlar
         # (suhbatdosh tomonida ham) hech qachon o'zgarmaydi/o'chmaydi.
@@ -155,7 +158,7 @@ class MessageDetailView(generics.RetrieveAPIView):
     def get_queryset(self):
         return Message.objects.filter(
             room__participants=self.request.user,
-        ).select_related('sender', 'reply_to', 'room')
+        ).select_related('sender', 'sender__profile', 'reply_to', 'reply_to__sender', 'reply_to__sender__profile', 'room')
 
 
 class SendMessageView(APIView):

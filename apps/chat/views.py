@@ -180,12 +180,12 @@ class SendMessageView(APIView):
         data = ser.validated_data
 
         msg_type = data.get('message_type', 'text')
-        sub = getattr(request.user, 'subscription', None)
+        sub  = getattr(request.user, 'subscription', None)
         plan = sub.plan if sub and sub.is_active else None
 
         if msg_type == 'voice' and not (plan and plan.can_send_voice):
             return Response({'detail': 'Ovozli xabar Premium/VIP uchun.', 'code': 'voice_premium_only'}, status=403)
-        if msg_type == 'video' and not (plan and plan.can_send_video_msg):
+        if msg_type in ('video', 'video_note') and not (plan and plan.can_send_video_msg):
             return Response({'detail': 'Video xabar Premium/VIP uchun.', 'code': 'video_premium_only'}, status=403)
 
         reply_to = None

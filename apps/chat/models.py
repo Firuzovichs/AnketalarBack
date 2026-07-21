@@ -37,6 +37,7 @@ class Message(models.Model):
     MSG_DISAPPEARING_PHOTO = 'disappearing_photo'
     MSG_SYSTEM   = 'system'
     MSG_STORY_REPLY = 'story_reply'
+    MSG_VIDEO_NOTE = 'video_note'
     MSG_TYPES = [
         (MSG_TEXT,     'Matn'),
         (MSG_IMAGE,    'Rasm'),
@@ -46,6 +47,7 @@ class Message(models.Model):
         (MSG_DISAPPEARING_PHOTO, "O'chib ketadigan rasm"),
         (MSG_SYSTEM,   'Tizim xabari'),
         (MSG_STORY_REPLY, 'Storyga javob'),
+        (MSG_VIDEO_NOTE, 'Video xabar (doira)'),
     ]
 
     room         = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')

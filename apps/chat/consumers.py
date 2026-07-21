@@ -194,5 +194,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def update_last_seen(self):
+        # AnonymousUser.save() mavjud emas — authenticated tekshiruv qilamiz
+        if not self.user or not getattr(self.user, 'is_authenticated', False):
+            return
         self.user.last_seen = timezone.now()
         self.user.save(update_fields=['last_seen'])

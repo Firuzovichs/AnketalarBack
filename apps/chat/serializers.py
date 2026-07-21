@@ -95,7 +95,7 @@ class SendMessageSerializer(serializers.Serializer):
     # to'g'ridan-to'g'ri Message.objects.create() orqali yaratiladi, oddiy
     # foydalanuvchi shu endpoint orqali soxta "tizim xabari" yubora olmasin.
     message_type = serializers.ChoiceField(
-        choices=['text', 'image', 'video', 'voice', 'location', 'disappearing_photo'],
+        choices=['text', 'image', 'video', 'video_note', 'voice', 'location', 'disappearing_photo'],
         default='text',
     )
     content      = serializers.CharField(required=False, allow_blank=True)
@@ -113,7 +113,7 @@ class SendMessageSerializer(serializers.Serializer):
         msg_type = attrs.get('message_type')
         if msg_type == 'text' and not attrs.get('content'):
             raise serializers.ValidationError({'content': 'Matn xabari uchun content kiritilishi shart.'})
-        if msg_type in ['image', 'video', 'voice'] and not attrs.get('media'):
+        if msg_type in ['image', 'video', 'video_note', 'voice'] and not attrs.get('media'):
             raise serializers.ValidationError({'media': 'Media fayl yuborilishi shart.'})
         if msg_type == 'location' and (attrs.get('latitude') is None or attrs.get('longitude') is None):
             raise serializers.ValidationError({'latitude': 'Lokatsiya uchun latitude/longitude kiritilishi shart.'})

@@ -115,8 +115,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def typing_indicator(self, event):
         if event['user_id'] != self.user.id:
             await self.send(text_data=json.dumps({
-                'type':     'typing',
-                'user_id':  event['user_id'],
+                'type':      'typing',
+                'user_id':   event['user_id'],
+                'is_typing': event.get('is_typing', False),
             }))
 
     async def presence_status(self, event):

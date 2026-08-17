@@ -2,7 +2,7 @@ from django.utils import timezone
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from .models import Banner, News, StaticPage
 from .serializers import BannerSerializer, NewsSerializer, StaticPageSerializer
@@ -51,7 +51,7 @@ class NewsDetailView(generics.RetrieveAPIView):
 class StaticPageView(generics.RetrieveAPIView):
     """GET /api/home/pages/{slug}/ — Biz haqimizda / Foydalanish shartlari / Maxfiylik siyosati."""
     serializer_class = StaticPageSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     lookup_field = 'slug'
     queryset = StaticPage.objects.all()
 

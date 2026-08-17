@@ -33,7 +33,7 @@ backend/
 |--------|-----|--------|
 | POST | `/send-otp/` | OTP yuborish (email/telefon) |
 | POST | `/verify-otp/` | OTP tasdiqlash |
-| POST | `/register/` | Ro'yxatdan o'tish |
+| POST | `/register/` | Ro'yxatdan o'tish (shartlarga rozilik bilan) |
 | POST | `/login/` | Kirish |
 | POST | `/token/refresh/` | Tokenni yangilash |
 | POST | `/logout/` | Chiqish |
@@ -44,6 +44,26 @@ backend/
 | DELETE | `/photos/<id>/` | Rasm o'chirish |
 | GET | `/interests/` | Qiziqishlar ro'yxati |
 | GET | `/goals/` | Maqsadlar ro'yxati |
+
+Ro'yxatdan o'tishdan oldin client amaldagi shartlarni `GET /api/home/pages/terms/`
+orqali oladi va javobdagi `version` qiymatini ro'yxatdan o'tish so'roviga yuboradi:
+
+```json
+{
+  "identifier": "user@example.com",
+  "otp": "123456",
+  "password": "secret-password",
+  "terms_accepted": true,
+  "terms_version": "1.0"
+}
+```
+
+Backend rozilik vaqtini, shartlar versiyasini, matnning SHA-256 xeshini va
+xavfsizlik auditiga oid IP/User-Agent ma'lumotlarini saqlaydi. Eski versiya
+yuborilsa, client yangi matnni ko'rsatib qayta rozilik olishi kerak.
+
+Yuz tasvirini yuborishda shaxsga doir biometrik ma'lumotlar uchun alohida
+`biometric_consent: true` maydoni ham yuborilishi shart.
 
 ### Locations (`/api/locations/`)
 | Method | URL | Tavsif |

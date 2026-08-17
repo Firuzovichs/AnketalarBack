@@ -1,6 +1,22 @@
+from django import forms
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import Banner, News, StaticPage
+
+
+class StaticPageAdminForm(forms.ModelForm):
+    class Meta:
+        model = StaticPage
+        fields = '__all__'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if self.instance.pk and 'content' in self.changed_data and 'version' not in self.changed_data:
+            self.add_error(
+                'version',
+                "Kontent o'zgarganda rozilik tarixini aniq saqlash uchun versiyani ham yangilang.",
+            )
+        return cleaned_data
 
 
 @admin.register(Banner)
@@ -27,7 +43,8 @@ class StaticPageAdmin(admin.ModelAdmin):
     Biz haqimizda / Foydalanish shartlari / Maxfiylik siyosati — faqat tahrirlash,
     hech qachon o'chirish mumkin emas (ilova bu sahifalarga slug bo'yicha tayanadi).
     """
-    list_display   = ['title', 'slug', 'updated_at']
+    form = StaticPageAdminForm
+    list_display   = ['title', 'slug', 'version', 'updated_at']
     readonly_fields = ['updated_at']
     search_fields   = ['title', 'content']
 

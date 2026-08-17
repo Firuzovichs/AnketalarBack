@@ -2,7 +2,7 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView, TokenBlacklistView
 from .views import (
     SendOTPView, VerifyOTPView, RegisterView, LoginView,
-    MeView, ProfileSetupView, FaceScanView,
+    MeView, ProfileSetupView, FaceScanView, TermsStatusView, TermsAcceptView,
     PhotoUploadView, PhotoDeleteView,
     InterestListView, GoalListView,
     PasswordResetRequestView, PasswordResetConfirmView,
@@ -22,6 +22,8 @@ urlpatterns = [
 
     # Profile
     path('me/',          MeView.as_view(),          name='me'),
+    path('terms-status/', TermsStatusView.as_view(),  name='terms-status'),
+    path('terms-accept/', TermsAcceptView.as_view(),  name='terms-accept'),
     path('profile/setup/', ProfileSetupView.as_view(), name='profile-setup'),
     path('profile/face-scan/', FaceScanView.as_view(), name='face-scan'),
 

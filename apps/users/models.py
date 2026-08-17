@@ -61,6 +61,41 @@ class OTPVerification(models.Model):
         return not self.is_used and timezone.now() < self.expires_at
 
 
+class TermsAcceptance(models.Model):
+    """
+    Foydalanish shartlariga berilgan rozilikning o'zgarmas audit yozuvi.
+
+    `content_hash` foydalanuvchi aynan qaysi matnga rozilik berganini, matn
+    keyinchalik admin panelda tahrirlangan taqdirda ham, tekshirish imkonini
+    beradi. Yozuvlar admin paneldan o'chirilmaydi yoki tahrirlanmaydi.
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='terms_acceptances',
+        verbose_name='Foydalanuvchi',
+    )
+    version = models.CharField(max_length=20, verbose_name='Shartlar versiyasi')
+    content_hash = models.CharField(max_length=64, verbose_name='Matn SHA-256 xeshi')
+    ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name='IP manzil')
+    user_agent = models.CharField(max_length=500, blank=True, verbose_name='Qurilma maʼlumoti')
+    accepted_at = models.DateTimeField(auto_now_add=True, verbose_name='Rozilik vaqti')
+
+    class Meta:
+        ordering = ['-accepted_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'version', 'content_hash'],
+                name='unique_user_terms_acceptance',
+            ),
+        ]
+        verbose_name = 'Foydalanish shartlariga rozilik'
+        verbose_name_plural = 'Foydalanish shartlariga roziliklar'
+
+    def __str__(self):
+        return f'{self.user} — {self.version} ({self.accepted_at:%Y-%m-%d %H:%M})'
+
+
 class Interest(models.Model):
     name    = models.CharField(max_length=100)           # English
     name_uz = models.CharField(max_length=100)           # O'zbekcha
@@ -100,9 +135,15 @@ class UserProfile(models.Model):
     )
     interests = models.ManyToManyField(Interest, blank=True)
     goals = models.ManyToManyField(Goal, blank=True)
+    social_tiktok = models.CharField(max_length=255, blank=True)
+    social_instagram = models.CharField(max_length=255, blank=True)
+    social_telegram = models.CharField(max_length=255, blank=True)
     # Face scan
     face_scan = models.ImageField(upload_to='face_scans/%Y/%m/', null=True, blank=True)
+    face_scan_video = models.FileField(upload_to='face_scan_videos/%Y/%m/', null=True, blank=True)
     is_face_verified = models.BooleanField(default=False)
+    biometric_consent_at = models.DateTimeField(null=True, blank=True)
+    biometric_consent_version = models.CharField(max_length=20, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     @property

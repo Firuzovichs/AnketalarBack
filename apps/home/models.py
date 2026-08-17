@@ -33,6 +33,7 @@ class StaticPage(models.Model):
     ]
     slug       = models.SlugField(max_length=30, unique=True, choices=SLUG_CHOICES, verbose_name='Slug')
     title      = models.CharField(max_length=200, verbose_name='Sarlavha')
+    version    = models.CharField(max_length=20, default='1.0', verbose_name='Versiya')
     content    = models.TextField(verbose_name='Kontent')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Yangilangan vaqti')
 

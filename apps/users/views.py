@@ -1,3 +1,4 @@
+import hashlib
 from datetime import timedelta
 from django.utils import timezone
 from rest_framework import status, generics
@@ -9,7 +10,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.db.models import Q
 
-from .models import User, UserProfile, UserPhoto, OTPVerification, Interest, Goal, Block, Report, AccountDeletionRequest
+from .models import User, UserProfile, UserPhoto, OTPVerification, Interest, Goal, Block, Report, AccountDeletionRequest, TermsAcceptance
+from apps.home.models import StaticPage
 from .serializers import (
     SendOTPSerializer, VerifyOTPSerializer, RegisterSerializer,
     LoginSerializer, UserSerializer, ProfileSetupSerializer,
@@ -71,10 +73,10 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        ser = RegisterSerializer(data=request.data)
+        ser = RegisterSerializer(data=request.data, context={'request': request})
         ser.is_valid(raise_exception=True)
         user = ser.save()
-        return Response({'tokens': get_tokens_for_user(user), 'user': UserSerializer(user).data},
+        return Response({'tokens': get_tokens_for_user(user), 'user': UserSerializer(user, context={'request': request}).data},
                         status=status.HTTP_201_CREATED)
 
 
@@ -100,7 +102,46 @@ class LoginView(APIView):
 
         user.last_seen = timezone.now()
         user.save(update_fields=['last_seen'])
-        return Response({'tokens': get_tokens_for_user(user), 'user': UserSerializer(user).data})
+        return Response({'tokens': get_tokens_for_user(user), 'user': UserSerializer(user, context={'request': request}).data})
+
+
+class TermsStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response(UserSerializer(request.user, context={'request': request}).data.get('terms_status', {}))
+
+
+class TermsAcceptView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            terms = StaticPage.objects.get(slug='terms')
+        except StaticPage.DoesNotExist:
+            return Response({'detail': 'Foydalanish shartlari mavjud emas.'}, status=404)
+
+        requested_version = str(request.data.get('terms_version', ''))
+        if requested_version != terms.version:
+            return Response({
+                'detail': "Foydalanish shartlari yangilangan. Sahifani qayta yuklang.",
+                'terms_version': terms.version,
+            }, status=409)
+
+        acceptance, _ = TermsAcceptance.objects.get_or_create(
+            user=request.user,
+            version=terms.version,
+            content_hash=hashlib.sha256(terms.content.encode('utf-8')).hexdigest(),
+            defaults={
+                'ip_address': request.META.get('REMOTE_ADDR'),
+                'user_agent': request.META.get('HTTP_USER_AGENT', '')[:500],
+            },
+        )
+        return Response({
+            'accepted': True,
+            'accepted_at': acceptance.accepted_at,
+            'terms_version': acceptance.version,
+        })
 
 
 class MeView(generics.RetrieveUpdateAPIView):
@@ -116,7 +157,7 @@ class MeView(generics.RetrieveUpdateAPIView):
 class ProfileSetupView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
+    def _save(self, request):
         # Avval validatsiya, keyin create/update
         try:
             profile = UserProfile.objects.get(user=request.user)
@@ -127,6 +168,15 @@ class ProfileSetupView(APIView):
         ser.is_valid(raise_exception=True)
         profile = ser.save(user=request.user)
         return Response(UserSerializer(request.user, context={'request': request}).data)
+
+    def post(self, request):
+        return self._save(request)
+
+    def patch(self, request):
+        return self._save(request)
+
+    def put(self, request):
+        return self._save(request)
 
 
 class FaceScanView(APIView):

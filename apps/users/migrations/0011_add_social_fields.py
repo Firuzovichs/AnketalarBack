@@ -1,0 +1,26 @@
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('users', '0010_account_deletion_request'),
+    ]
+
+    operations = [
+        migrations.AddField(
+            model_name='userprofile',
+            name='social_tiktok',
+            field=models.CharField(blank=True, max_length=50),
+        ),
+        migrations.AddField(
+            model_name='userprofile',
+            name='social_instagram',
+            field=models.CharField(blank=True, max_length=50),
+        ),
+        migrations.AddField(
+            model_name='userprofile',
+            name='social_telegram',
+            field=models.CharField(blank=True, max_length=50),
+        ),
+    ]

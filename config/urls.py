@@ -1,8 +1,9 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from config.media import ranged_media
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -18,4 +19,5 @@ urlpatterns = [
     path('api/subscriptions/', include('apps.subscriptions.urls')),
     path('api/search/',        include('apps.search.urls')),
     path('api/home/',          include('apps.home.urls')),
+    re_path(r'^media/(?P<path>.*)$', ranged_media, name='ranged-media'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

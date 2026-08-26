@@ -1,7 +1,10 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
-from .models import User, UserProfile, UserPhoto, Interest, Goal, OTPVerification, Block, Report, AccountDeletionRequest
+from .models import (
+    User, UserProfile, UserPhoto, Interest, Goal, OTPVerification, Block,
+    Report, AccountDeletionRequest, TermsAcceptance,
+)
 
 
 class UserProfileInline(admin.StackedInline):
@@ -16,7 +19,11 @@ class UserProfileInline(admin.StackedInline):
     extra = 1
     max_num = 1
     can_delete = False
-    fields = ['first_name', 'last_name', 'patronymic', 'birth_date', 'gender', 'bio']
+    fields = [
+        'first_name', 'last_name', 'patronymic', 'birth_date', 'gender', 'bio',
+        'biometric_consent_at', 'biometric_consent_version',
+    ]
+    readonly_fields = ['biometric_consent_at', 'biometric_consent_version']
 
 
 @admin.register(User)
@@ -52,7 +59,9 @@ class UserProfileAdmin(admin.ModelAdmin):
         'user', 'first_name', 'last_name', 'patronymic', 'birth_date', 'gender', 'bio',
         'height', 'weight', 'latitude', 'longitude', 'district',
         'interests', 'goals', 'is_face_verified',
+        'biometric_consent_at', 'biometric_consent_version',
     ]
+    readonly_fields = ['biometric_consent_at', 'biometric_consent_version']
     autocomplete_fields = ['user']
     filter_horizontal = ['interests', 'goals']
 
@@ -112,6 +121,26 @@ class UserPhotoAdmin(admin.ModelAdmin):
 
 
 admin.site.register(OTPVerification)
+
+
+@admin.register(TermsAcceptance)
+class TermsAcceptanceAdmin(admin.ModelAdmin):
+    list_display = ['user', 'version', 'ip_address', 'accepted_at']
+    list_filter = ['version', 'accepted_at']
+    search_fields = ['user__email', 'user__phone', 'content_hash', 'ip_address']
+    readonly_fields = [
+        'user', 'version', 'content_hash', 'ip_address', 'user_agent', 'accepted_at',
+    ]
+    ordering = ['-accepted_at']
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(Block)

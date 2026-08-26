@@ -1,19 +1,19 @@
 """
 python manage.py seed_demo_data
 
-10 ta test foydalanuvchi (5 erkak + 5 ayol),
-3 ta banner, 3 ta yangilik yaratadi.
+100 ta test foydalanuvchi, 3 ta banner va 3 ta yangilik yaratadi.
 """
 import io
 import random
 from datetime import date
 from decimal import Decimal
+from pathlib import Path
 
 from django.core.management.base import BaseCommand
 from django.core.files.base import ContentFile
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
-from apps.users.models import User, UserProfile, UserPhoto, Interest
+from apps.users.models import User, UserProfile, UserPhoto, Interest, Goal
 from apps.locations.models import District
 from apps.home.models import Banner, News
 
@@ -37,24 +37,35 @@ def random_nearby_point(center_lat: float, center_lng: float, max_km: float = 4.
     return Decimal(str(lat)), Decimal(str(lng))
 
 
-# ── Rang palitralari ─────────────────────────────────────────────────
-MALE_COLORS   = ["#4A90D9", "#5B6AF0", "#2ECC71", "#E74C3C", "#9B59B6"]
-FEMALE_COLORS = ["#FF6B9D", "#FF9A8B", "#F093FB", "#FCCB90", "#D57EEB"]
+MALE_NAMES = [
+    "Jasur", "Bobur", "Sanjar", "Dilshod", "Ulugbek", "Alisher", "Rustam", "Bekzod",
+    "Shavkat", "Sardor", "Farrux", "Yusuf", "Iskandar", "Nodir", "Nodirbek", "Azamat",
+    "Samar", "Islom", "Muhammad", "Javohir", "Akmal", "Sardorbek", "Zokir", "Nuri",
+    "Bekhruz", "Odil", "Ibrohim", "Sulton", "Mirjalol", "Farhod", "Fayzullo", "Mansur",
+    "Daler", "Asror", "Shavkatbek", "Davron", "Behruz", "Komil", "Anvar", "Ulugbek",
+    "Rustambek", "Temurbek", "Rashid", "Barkamol", "Nurbek", "Firdavs", "Samandar",
+]
 
-MALES = [
-    ("Jasur",    "Toshmatov",  25, "1999-03-15"),
-    ("Bobur",    "Karimov",    28, "1996-07-22"),
-    ("Sanjar",   "Yusupov",    24, "2000-01-10"),
-    ("Dilshod",  "Nazarov",    30, "1994-11-05"),
-    ("Ulugbek",  "Rahimov",    27, "1997-05-30"),
+FEMALE_NAMES = [
+    "Malika", "Nilufar", "Zulfiya", "Munira", "Shahnoza", "Gulnora", "Madina", "Aziza",
+    "Sitora", "Dilnoza", "Sevara", "Farzona", "Nigora", "Baxmal", "Lola", "Malika",
+    "Nodira", "Samar", "Asal", "Gulbahor", "Shahlo", "Dilshoda", "Shirin", "Sardoriy",
+    "Malayka", "Mavluda", "Gulchehra", "Seydoua", "Nodira", "Muqaddas", "Laziza",
+    "Shabnam", "Zarina", "Mubina", "Shaxlo", "Laziz", "Nodira", "Oysha", "Jamila",
 ]
-FEMALES = [
-    ("Malika",   "Abdullayeva", 23, "2001-04-18"),
-    ("Nilufar",  "Hasanova",   26, "1998-09-12"),
-    ("Zulfiya",  "Mirzayeva",  24, "2000-06-25"),
-    ("Munira",   "Qodirova",   29, "1995-02-08"),
-    ("Shahnoza", "Ergasheva",  25, "1999-12-01"),
+
+LAST_NAMES = [
+    "Toshmatov", "Karimov", "Yusupov", "Nazarov", "Rahimov", "Mirzo", "Abdullayev",
+    "Hasanova", "Qodirova", "Ergasheva", "Ibragimov", "Sodikov", "Rasulov", "Muminov",
+    "Soliyev", "Tursunov", "Nuraliev", "Azimov", "Qosimov", "Muminov", "Aliyev", "Qayum",
+    "Rashidov", "Shamsiev", "Toshpulatov", "Temirov", "Islomov", "Kadirov", "Nazarbekov",
 ]
+
+TOTAL_DEMO_USERS = 100
+MIN_AGE = 20
+MAX_AGE = 43
+PHONE_TEMPLATES = ["901", "907", "909", "910", "911", "912", "913", "914", "915", "916"]
+PROFILE_ASSETS_DIR = Path(__file__).resolve().parent / "assets" / "demo_profiles"
 
 BANNERS = [
     ("Anketalar Premium",   "Premium a'zolik bilan cheksiz imkoniyatlar!",   "#FF6B9D", "#C44FED"),
@@ -112,27 +123,97 @@ def make_gradient_image(width: int, height: int, color1: str, color2: str, label
     return buf.getvalue()
 
 
-def make_avatar(width: int, height: int, color: str, initials: str) -> bytes:
-    """Boshlang'ich harf(lar)li avatar yaratadi."""
-    img = Image.new("RGB", (width, height), color=color)
-    draw = ImageDraw.Draw(img)
-    # Daire
-    draw.ellipse([0, 0, width - 1, height - 1],
-                 fill=color)
-    # Matn
-    try:
-        draw.text((width // 2 - len(initials) * 8, height // 2 - 12),
-                  initials, fill=(255, 255, 255))
-    except Exception:
-        pass
+def random_birth_date(min_age: int = MIN_AGE, max_age: int = MAX_AGE) -> date:
+    """Tasodifiy tug‘ilgan kun — profil uchun real ko‘rinishdagi yosh uchun."""
+    age = random.randint(min_age, max_age)
+    day = random.randint(1, 28)
+    month = random.randint(1, 12)
+    year = date.today().year - age
+    return date(year, month, day)
 
-    buf = io.BytesIO()
-    img.save(buf, format="JPEG", quality=85)
-    return buf.getvalue()
+
+def make_phone(index: int, gender: str) -> str:
+    """Demo foydalanuvchi uchun noyob mobil raqam yaratish."""
+    operator = PHONE_TEMPLATES[index % len(PHONE_TEMPLATES)]
+    rest = f"{index:06d}"
+    return f"+998 {operator} {rest[:2]} {rest[2:4]} {rest[4:]}" if gender == "M" else f"+998 {operator} {rest[:3]} {rest[3:5]} {rest[5:]}"
+
+
+def build_demo_bio(first: str, gender: str) -> str:
+    """Kichik, ammo turli biografiya matnlari."""
+    if gender == "M":
+        intro = [
+            f"Salom, men {first}, yoshligimdan hayotdan zavqlanadigan odamman.",
+            f"Men {first}man — faollikni, samimiy suhbatni va sifatli vaqtni qadrlayman.",
+            f"Yangi do‘stlar va to‘g‘ri tanishuvlar bilan tanishishni yaxshi ko‘raman.",
+        ]
+    else:
+        intro = [
+            f"Salom, men {first}. Ochiq, do‘stona va samimiy insonman.",
+            f"Mening isming {first}. Oila va do‘stlik qadriyati yuqori turadi.",
+            f"{first}man, hayotdagi kichik quvonchlardan zavq olishni yoqtiraman.",
+        ]
+    base = random.choice(intro)
+    extras = [
+        "Kino, musiqa va sayohat juda yoqadi.",
+        "Kitob o‘qish va sport bilan shug‘ullanishni yaxshi ko‘raman.",
+        "Kelajakni birga rejalashtira oladigan samimiy insonni izlayapman.",
+        "Sohibjamol suhbatlar, yurish va yangi joylar meni qiynamaydi.",
+        "Hayotiy qadriyatlarim: hurmat, ishonch va aniq niyat.",
+    ]
+    return f"{base} {random.choice(extras)}"
+
+
+def sync_natural_profile_photo(user, gender: str, profile_index: int) -> None:
+    """Demo profilga jinsiga mos, tabiiy portretni asosiy rasm qilib ulaydi.
+
+    Assetlar repozitoriyada saqlanadi, shuning uchun Docker qayta qurilganda ham
+    seed bir xil sifatli rasmlarni tiklay oladi. Eski gradient/harfli demo
+    rasmlar o'chirilmaydi, faqat soft-delete qilinadi.
+    """
+    gender_dir = "men" if gender == "M" else "women"
+    asset_number = profile_index % 50 + 1
+    asset_path = PROFILE_ASSETS_DIR / gender_dir / f"{asset_number:02d}.jpg"
+    if not asset_path.exists():
+        raise FileNotFoundError(f"Demo profil rasmi topilmadi: {asset_path}")
+
+    filename = f"demo_natural_{gender.lower()}_{asset_number:02d}.jpg"
+    active_photos = UserPhoto.objects.filter(user=user, is_deleted=False)
+    natural_photo = active_photos.filter(image__endswith=filename).first()
+
+    # Faqat demo profilning yangi tabiiy rasmi faol qoladi. Oldingi placeholder
+    # fayllar tarix uchun bazada saqlanadi, ammo API ularni qaytarmaydi.
+    active_photos.exclude(pk=getattr(natural_photo, "pk", None)).update(
+        is_deleted=True,
+        is_main=False,
+    )
+
+    if natural_photo is None:
+        natural_photo = UserPhoto(user=user, is_main=True, order=0)
+        natural_photo.image.save(
+            filename,
+            ContentFile(asset_path.read_bytes()),
+            save=False,
+        )
+        natural_photo.save()
+    elif not natural_photo.is_main or natural_photo.order != 0:
+        natural_photo.is_main = True
+        natural_photo.order = 0
+        natural_photo.save(update_fields=["is_main", "order"])
+
+
+def sync_profile_fields(profile: UserProfile, data: dict) -> None:
+    changed = False
+    for field, value in data.items():
+        if getattr(profile, field) != value:
+            setattr(profile, field, value)
+            changed = True
+    if changed:
+        profile.save(update_fields=list(data.keys()))
 
 
 class Command(BaseCommand):
-    help = "Demo ma'lumotlar: 10 user + bannerlar + yangiliklar"
+    help = "Demo ma'lumotlar: 100 user + bannerlar + yangiliklar"
 
     def handle(self, *args, **options):
         self._seed_users()
@@ -141,70 +222,103 @@ class Command(BaseCommand):
 
     # ── Users ────────────────────────────────────────────────────────
     def _seed_users(self):
-        interests = list(Interest.objects.all()[:5])
+        interests = list(Interest.objects.all())
+        goals = list(Goal.objects.all())
         districts = list(District.objects.select_related('region').all()[:10])
+        total_created = 0
+        total_existing = 0
 
-        created = 0
-        all_users = [("M", MALES, MALE_COLORS), ("F", FEMALES, FEMALE_COLORS)]
+        for i in range(TOTAL_DEMO_USERS):
+            gender = "M" if i < TOTAL_DEMO_USERS // 2 else "F"
+            pool = MALE_NAMES if gender == "M" else FEMALE_NAMES
+            first = pool[i % len(pool)]
+            last = LAST_NAMES[i % len(LAST_NAMES)]
+            lat, lng = random_nearby_point(TASHKENT_LAT, TASHKENT_LNG, max_km=8.0)
+            email = f"demo_{gender.lower()}_{i + 1:03d}@demo.uz"
+            phone = make_phone(i + 1, gender)
 
-        for gender, persons, colors in all_users:
-            for i, (first, last, age, bdate) in enumerate(persons):
-                email = f"{first.lower()}.{last.lower()}@demo.uz"
-                lat, lng = random_nearby_point(TASHKENT_LAT, TASHKENT_LNG)
+            existing = User.objects.filter(email=email).first()
+            bday = random_birth_date()
 
-                existing = User.objects.filter(email=email).first()
-                if existing:
-                    # Allaqachon mavjud — lekin avvalroq lat/lng berilmagan
-                    # bo'lishi mumkin (eski xato), shuning uchun bu yerda
-                    # to'ldirib qo'yamiz, shunda xaritada ko'rina boshlaydi.
-                    profile = getattr(existing, 'profile', None)
-                    if profile and (profile.latitude is None or profile.longitude is None):
-                        profile.latitude = lat
-                        profile.longitude = lng
-                        profile.save(update_fields=['latitude', 'longitude'])
-                        self.stdout.write(f"  📍 {email} uchun joylashuv to'ldirildi")
-                    else:
-                        self.stdout.write(f"  ⏭  {email} allaqachon mavjud")
-                    continue
-
-                user = User.objects.create_user(
-                    email=email,
-                    password="Demo1234!",
-                    is_active=True,
-                )
-
+            if existing:
+                profile = getattr(existing, "profile", None)
+                if not profile:
+                    profile = UserProfile.objects.create(
+                        user=existing,
+                        first_name=first,
+                        last_name=last,
+                        birth_date=bday,
+                        gender=gender,
+                        is_face_verified=True,
+                    )
                 district = districts[i % len(districts)] if districts else None
-
-                profile = UserProfile.objects.create(
-                    user=user,
-                    first_name=first,
-                    last_name=last,
-                    birth_date=date.fromisoformat(bdate),
-                    gender=gender,
-                    height=random.randint(160, 185) if gender == "M" else random.randint(155, 172),
-                    weight=random.randint(65, 85)   if gender == "M" else random.randint(48, 68),
-                    is_face_verified=True,
-                    district=district,
-                    latitude=lat,
-                    longitude=lng,
+                sync_profile_fields(
+                    profile,
+                    {
+                        "first_name": first,
+                        "last_name": last,
+                        "birth_date": bday,
+                        "gender": gender,
+                        "height": random.randint(160, 188) if gender == "M" else random.randint(152, 172),
+                        "weight": random.randint(55, 95) if gender == "M" else random.randint(45, 78),
+                        "bio": build_demo_bio(first, gender),
+                        "is_face_verified": True,
+                        "district": district,
+                        "latitude": lat,
+                        "longitude": lng,
+                    },
                 )
+                if not existing.phone:
+                    existing.phone = phone
+                    existing.save(update_fields=["phone"])
                 if interests:
-                    profile.interests.set(random.sample(interests, min(3, len(interests))))
+                    profile.interests.set(random.sample(interests, min(4, len(interests))))
+                if goals:
+                    profile.goals.set(random.sample(goals, min(2, len(goals))))
+                sync_natural_profile_photo(existing, gender, i if gender == "M" else i - 50)
+                total_existing += 1
+                self.stdout.write(f"  ♻️  {first} {last} ({email}) yangilandi")
+                continue
 
-                # Avatar rasm
-                color = colors[i % len(colors)]
-                img_bytes = make_avatar(400, 400, color, first[0] + last[0])
-                photo = UserPhoto(user=user, is_main=True, order=0)
-                photo.image.save(
-                    f"demo_{first.lower()}_{last.lower()}.jpg",
-                    ContentFile(img_bytes), save=True
-                )
+            user = User.objects.create_user(
+                email=email,
+                password="Demo1234!",
+                is_active=True,
+                phone=phone,
+            )
 
-                created += 1
-                icon = "👨" if gender == "M" else "👩"
-                self.stdout.write(f"  {icon} {first} {last} ({email}) yaratildi")
+            district = districts[i % len(districts)] if districts else None
 
-        self.stdout.write(self.style.SUCCESS(f"\n✅ {created} yangi foydalanuvchi qo'shildi"))
+            profile = UserProfile.objects.create(
+                user=user,
+                first_name=first,
+                last_name=last,
+                birth_date=bday,
+                gender=gender,
+                height=random.randint(160, 188) if gender == "M" else random.randint(152, 172),
+                weight=random.randint(55, 95) if gender == "M" else random.randint(45, 78),
+                bio=build_demo_bio(first, gender),
+                is_face_verified=True,
+                district=district,
+                latitude=lat,
+                longitude=lng,
+            )
+            if interests:
+                profile.interests.set(random.sample(interests, min(4, len(interests))))
+            if goals:
+                profile.goals.set(random.sample(goals, min(2, len(goals))))
+
+            sync_natural_profile_photo(user, gender, i if gender == "M" else i - 50)
+
+            total_created += 1
+            icon = "👨" if gender == "M" else "👩"
+            self.stdout.write(f"  {icon} {first} {last} ({email}) yaratildi")
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"\n✅ {total_created} yangi foydalanuvchi yaratildi, {total_existing} mavjud profil yangilandi"
+            )
+        )
 
     # ── Banners ──────────────────────────────────────────────────────
     def _seed_banners(self):

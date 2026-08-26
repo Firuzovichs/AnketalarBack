@@ -52,6 +52,7 @@ class StaticPageView(generics.RetrieveAPIView):
     """GET /api/home/pages/{slug}/ — Biz haqimizda / Foydalanish shartlari / Maxfiylik siyosati."""
     serializer_class = StaticPageSerializer
     permission_classes = [AllowAny]
+    authentication_classes = []   # JWT tekshirilmasin — token bo'lmasa ham ochiq
     lookup_field = 'slug'
     queryset = StaticPage.objects.all()
 

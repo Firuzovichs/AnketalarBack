@@ -100,10 +100,6 @@ class UserProfile(models.Model):
     )
     interests = models.ManyToManyField(Interest, blank=True)
     goals = models.ManyToManyField(Goal, blank=True)
-    # Social networks
-    social_tiktok    = models.CharField(max_length=50, blank=True)
-    social_instagram = models.CharField(max_length=50, blank=True)
-    social_telegram  = models.CharField(max_length=50, blank=True)
     # Face scan
     face_scan = models.ImageField(upload_to='face_scans/%Y/%m/', null=True, blank=True)
     is_face_verified = models.BooleanField(default=False)

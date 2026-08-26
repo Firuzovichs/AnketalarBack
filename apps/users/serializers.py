@@ -65,7 +65,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'district', 'district_id',
             'interests', 'interest_ids',
             'goals', 'goal_ids',
-            'social_tiktok', 'social_instagram', 'social_telegram',
             'is_face_verified', 'is_complete',
         ]
         read_only_fields = ['is_face_verified', 'is_complete', 'age']
@@ -180,7 +179,6 @@ class ProfileSetupSerializer(serializers.ModelSerializer):
             'birth_date', 'gender', 'bio', 'height', 'weight',
             'latitude', 'longitude',
             'district_id', 'interest_ids', 'goal_ids',
-            'social_tiktok', 'social_instagram', 'social_telegram',
         ]
 
     def create(self, validated_data):
